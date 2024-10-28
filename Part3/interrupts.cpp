@@ -9,9 +9,34 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <iomanip>
 #include "interrupts.hpp"
 
 namespace Parsing {
+
+    void readExtFiles(std::ifstream* file, MemoryStructures::extFile* node)
+    {
+        if(!file->eof()) {
+                std::string text;
+                getline(*(file),text);
+                for(int i = 0, len = text.size(); i < len; i++){
+                    if (text[i] == ','){
+                        text.erase(i--, 1);
+                        len = text.size();
+                    }
+                }
+                
+                std::stringstream ss(text);
+                std::string temp;
+                getline(ss, temp,' ');// First parameter always program name
+                for (int i = 0, len = temp.size(); i < len; i++){
+                    node->programName[i] = temp[i];
+                }
+                getline(ss,temp,' ');
+                node->size = stoi(temp);
+        }
+    }
+
 
     instr* readFromTrace(std::ifstream* file)
         {

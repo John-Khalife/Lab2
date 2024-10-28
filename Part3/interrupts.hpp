@@ -28,13 +28,13 @@ namespace MemoryStructures {
         __uint128_t cpuTime;
         __uint128_t pNum; //partition number
         PcbEntry* nextNode;
+        extFile* files;
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
-    struct File {
+    struct extFile {
         char programName[20];
         __uint128_t size;
-        File* next;
     };
 
     
@@ -54,6 +54,8 @@ namespace Parsing {
         const string END_IO = "END_IO";
 
     }
+
+    void readExtFiles(std::ifstream* file, MemoryStructures::extFile* head);
 
     //This struct holds the contents of an instruction including command and arguments
     struct instruction{
