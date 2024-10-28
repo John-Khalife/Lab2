@@ -11,7 +11,7 @@
 #include <string>
 #include "interrupts.hpp"
 
-namespace parsing {
+namespace Parsing {
 
     instr* readFromTrace(std::ifstream* file)
         {
@@ -47,11 +47,11 @@ namespace parsing {
     }
 }
 
-namespace execution {
+namespace Execution {
 
     void writeExecutionStep(std::ofstream* file, int duration, std::string eventType) {
         static int timer = 0;
-        (*file) << timer << ", " << duration << ", " << eventType << std::endl; // Write the execution message in the proper format
+        (*file) << timer << ", " << duration << ", " << eventType << std::endl; // Write the Execution message in the proper format
         timer += duration; //Add the amount of timer to CPU timer for the next write
     }
 
@@ -72,7 +72,7 @@ namespace execution {
     }
 
     void executeCPU(std::ofstream* output, int duration) {
-        writeExecutionStep(output,duration,"CPU execution.");
+        writeExecutionStep(output,duration,"CPU Execution.");
     }
 
     void interrupt(std::ofstream* output, int duration, int isrAddress) {
@@ -98,7 +98,7 @@ namespace execution {
         ifstream file;
         string text;
         
-        writeExecutionStep(output, 1,"Find vector " + std::to_string(isrAddress) + " in memory position " + parsing::integerToHexString(isrAddress) + ".");
+        writeExecutionStep(output, 1,"Find vector " + std::to_string(isrAddress) + " in memory position " + Parsing::integerToHexString(isrAddress) + ".");
         file.open("vector_table.txt");
         for (int i = 0 ; i <= isrAddress ; i++) {
             getline(file,text);
@@ -107,12 +107,12 @@ namespace execution {
         writeExecutionStep(output, 1, "Load address " + text + " into the PC."); //output the address being loaded
     }
 
-    void executeInstruction(std::ofstream* output, parsing::instr* instruction) {
-        if (!parsing::orders::CPU.compare(instruction->argName)) {
+    void executeInstruction(std::ofstream* output, Parsing::instr* instruction) {
+        if (!Parsing::orders::CPU.compare(instruction->argName)) {
             executeCPU(output,instruction->args[0]);
-        } else if (!parsing::orders::SYSCALL.compare(instruction->argName)) {
+        } else if (!Parsing::orders::SYSCALL.compare(instruction->argName)) {
             systemCall(output,instruction->args[1],instruction->args[0]);
-        } else if (!parsing::orders::END_IO.compare(instruction->argName)) {
+        } else if (!Parsing::orders::END_IO.compare(instruction->argName)) {
             interrupt(output,instruction->args[1],instruction->args[0]);
         }
     }
@@ -129,15 +129,15 @@ int main(int argc, char* argv[]) {
     std::string fileNum = ((std::string) argv[1]).substr(((std::string) argv[1]).find_first_of("0123456789"),((std::string) argv[1]).find_last_of("0123456789") - ((std::string) argv[1]).find_first_of("0123456789") + 1); //Grab the value before .txt
     std::ofstream output;
     //Create input and output file objects
-    if (isdigit(fileNum[0])) { //If the value is anumber, add it to the end of execution.
-        output.open("execution" + fileNum + ".txt");
+    if (isdigit(fileNum[0])) { //If the value is anumber, add it to the end of Execution.
+        output.open("Execution" + fileNum + ".txt");
     } else {
-        output.open("execution.txt"); //otherwise just open execution.txt as the output file.
+        output.open("Execution.txt"); //otherwise just open Execution.txt as the output file.
     }
     std::ifstream input(argv[1]);
         while(input.is_open()){
-            parsing::instr* operation = parsing::readFromTrace(&input);
-            execution::executeInstruction(&output,operation);
+            Parsing::instr* operation = Parsing::readFromTrace(&input);
+            Execution::executeInstruction(&output,operation);
         }
     return 0;
 }

@@ -12,8 +12,37 @@
 #include <fstream>
 #include <string>
 
-//These functions and structures are responsible for parsing.
-namespace parsing {
+
+//This namespace contains simulated memory structures used by the CPU.
+namespace MemoryStructures {
+    //This structure represents a single partition
+    struct Partition {
+        __uint128_t partitionNum;
+        __uint128_t size;
+        std::string code;
+    } typedef part_t;
+
+    //This structure represents a single PCB entry.
+    struct PcbEntry {
+        __uint128_t pid;
+        __uint128_t cpuTime;
+        __uint128_t pNum; //partition number
+        PcbEntry* nextNode;
+    } typedef pcb_t;
+
+    //This structure represents a file in persistent memory
+    struct File {
+        char programName[20];
+        __uint128_t size;
+        File* next;
+    };
+
+    
+}
+
+
+//These functions and structures are responsible for Parsing.
+namespace Parsing {
 
     const int MAX_PARAMETERS = 2; // Constant that holds the maximum number of parameters a command can have.
 
@@ -23,6 +52,7 @@ namespace parsing {
         const string CPU = "CPU";
         const string SYSCALL = "SYSCALL";
         const string END_IO = "END_IO";
+
     }
 
     //This struct holds the contents of an instruction including command and arguments
@@ -47,7 +77,7 @@ namespace parsing {
 };
 
 //All functions in this namespace are responsible for execution
-namespace execution {
+namespace Execution {
 
     /**
      * This method represents the CPU instruction that can be given from the trace.
@@ -87,7 +117,7 @@ namespace execution {
      * This method is used to call the appropriate function based on the instrcution given.
      * @param instruction - a instr struct that contains the command and any parameters it may have
     */
-    void executeInstruction(std::ofstream* output, parsing::instr* instruction);
+    void executeInstruction(std::ofstream* output, Parsing::instr* instruction);
 
 };
 
