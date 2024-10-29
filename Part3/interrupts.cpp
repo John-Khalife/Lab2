@@ -56,6 +56,7 @@ namespace Parsing {
                     for (int i = 0 ; i < std::strlen(s.c_str()) ; i++) {
                         if (!isdigit(s[i])) {
                             operation->args[i].isString = true;
+                            break;
                         }
                     }
 
