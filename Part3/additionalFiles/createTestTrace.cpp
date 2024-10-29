@@ -38,17 +38,17 @@ int main(int argc, char* argv[]){
 
         for(int j = 0; j < lineNum/2; j++) //Writes the instructions in the trace file
         {
-            outfile << parsing::orders::CPU << ", " << cpuDurationDistribution(generator) << std::endl;
+            outfile << Parsing::orders::CPU << ", " << cpuDurationDistribution(generator) << std::endl;
             
 
             if (j % 2 == 1){
-                outfile << parsing::orders::END_IO << " " << vectorTableDistribution(generator) << ", " << interruptDurationDistribution(generator) << std::endl;
+                outfile << Parsing::orders::END_IO << " " << vectorTableDistribution(generator) << ", " << interruptDurationDistribution(generator) << std::endl;
             } else {
-                outfile << parsing::orders::SYSCALL << " " << vectorTableDistribution(generator) << ", " << interruptDurationDistribution(generator) << std::endl;
+                outfile << Parsing::orders::SYSCALL << " " << vectorTableDistribution(generator) << ", " << interruptDurationDistribution(generator) << std::endl;
             }
         }
 
-        outfile << parsing::orders::CPU << ", " << cpuDurationDistribution(generator) << std::endl; //Last instruction
+        outfile << Parsing::orders::CPU << ", " << cpuDurationDistribution(generator) << std::endl; //Last instruction
 
         outfile.close(); //Closes the trace file.
     }

@@ -9,7 +9,28 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <memory>
 #include "interrupts.hpp"
+
+namespace MemoryStructures {
+        void addPCBEntry(std::shared_ptr<pcb_t>& head,
+        __uint128_t pid,
+        __uint128_t cpuTime,
+        __uint128_t partitionNum,
+        __uint128_t memoryAllocated)    
+    {
+            //Create the shared pointer
+            auto newNode = std::make_shared<pcb_t>(pid,cpuTime,partitionNum,memoryAllocated,NULL);
+            if (!head) {
+                //If the passed node is empty
+                head = newNode;
+            } else {
+                //make the newNode the new head o(1)
+                newNode->nextNode = head;
+                head = newNode;
+            }
+    }
+}
 
 namespace Parsing {
 
@@ -107,18 +128,66 @@ namespace Execution {
         writeExecutionStep(output, 1, "Load address " + text + " into the PC."); //output the address being loaded
     }
 
-    void executeInstruction(std::ofstream* output, Parsing::instr* instruction) {
+    void executeInstruction(std::ofstream* output, Parsing::instr* instruction, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files) {
         if (!Parsing::orders::CPU.compare(instruction->argName)) {
             executeCPU(output,instruction->args[0]);
         } else if (!Parsing::orders::SYSCALL.compare(instruction->argName)) {
             systemCall(output,instruction->args[1],instruction->args[0]);
         } else if (!Parsing::orders::END_IO.compare(instruction->argName)) {
             interrupt(output,instruction->args[1],instruction->args[0]);
+        } else if (!Parsing::orders::FORK.compare(instruction->argName)) {
+            fork(output,instruction->args[0]);
+        } else if (!Parsing::orders::EXEC.compare(instruction->argName)) {
+            interrupt(output,instruction->args[1],instruction->args[0]);
         }
+    }
+
+    void fork(std::ofstream* output, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files) {
+        std::default_random_engine generator; // generates uniformly distributed numbers
+        generator.seed(time(0)); //Give the generator a seed
+        std::uniform_int_distribution<int> forkTimeDistribution(1,10); //Create a distribution
+
+        //a. simulates system call - access vector table
+        accessVectorTable(output, 2);
+        //b. Copy parent PCB to child process
+        writeExecutionStep(output,forkTimeDistribution(generator),"Copy parent PCB to child PCB"); //TODO: access pcb from here
+
+        //c. Call the routing scheduler (all it should display for now is 'scheduler called')
+        writeExecutionStep(output,forkTimeDistribution(generator),"Scheduler called.");
+        //d. return from the ISR
+        writeExecutionStep(output,1,"IRET"); // Interrupt return.
+    }
+
+    void exec(std::ofstream* output, std::string filename, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files) {
+        std::default_random_engine generator; // generates uniformly distributed numbers
+        generator.seed(time(0)); //Give the generator a seed
+        std::uniform_int_distribution<int> execTimeDistribution(1,10); //Create a distribution
+        //a. simulate a system call - access the vector table
+        accessVectorTable(output, 3);
+        //TODO: b. find the file in the list, and set the size in the PCB
+        //TODO: c. find an empty partition where the program fits, with the best fit policy
+        //TODO: d. mark the partition as occupied
+        //TODO: e. update PCB
+        //f. do the routing scheduler thing again
+        writeExecutionStep(output,execTimeDistribution(generator),"Scheduler called.");
+        //g. return normally
+        writeExecutionStep(output,1,"IRET"); // Interrupt return.
     }
 }
 
 int main(int argc, char* argv[]) {
+    //Initialize memory partitions with the proper sizes.
+    using namespace MemoryStructures;
+    Partition* memory = new Partition[6];
+    for (int i = 0; i < sizeof(PARTITION_SIZES)/sizeof(int); i++) {
+        memory[i] = (Partition) {.size = PARTITION_SIZES[i], .partitionNum = i, .code = "free"};
+    } 
+    //Initialize partition 6 with the PCB
+    memory[5].code = "init";
+
+    //initialize pcb entry with smart pointer
+    std::shared_ptr<PcbEntry> pcb = std::make_shared<PcbEntry>(0,0,6,1,NULL);
+
     //Check to make sure there are arguments
     if (argc <= 1 || argc > 2) {
         std::cout << "Improper argument number." << std::endl;
@@ -139,5 +208,9 @@ int main(int argc, char* argv[]) {
             Parsing::instr* operation = Parsing::readFromTrace(&input);
             Execution::executeInstruction(&output,operation);
         }
+
+    //Cleanup 
+    delete[] memory;
+
     return 0;
 }
