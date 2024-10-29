@@ -32,6 +32,7 @@ namespace MemoryStructures {
         __uint128_t partitionNum; 
         __uint128_t memoryAllocated;
         std::shared_ptr<PcbEntry> nextNode;
+        std::ifstream filespot; 
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
@@ -141,7 +142,7 @@ namespace Execution {
      * @param output - an output stream for writing to the execution file.
      * @param duration - An integer stating the time taken for the CPu to complete the action
     */
-    void fork(std::ofstream* output, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files);
+    void fork(std::ofstream* output, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb);
 
    /**
     * This method handles the execute instruction
@@ -149,8 +150,6 @@ namespace Execution {
     * @param duration - An integer stating the time taken for the CPU to complete the action
    */
     void exec(std::ofstream* output, std::string filename, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files);
-
-
 
     /**
      * This method is used to call the appropriate function based on the instrcution given.
