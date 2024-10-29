@@ -71,13 +71,21 @@ namespace Parsing {
         const string END_IO = "END_IO";
         const string FORK = "FORK";
         const string EXEC = "EXEC";
-
     }
 
+    //This structure holds parameters
+    struct Parameter {
+        bool isString = false; //This is a type tag
+        union {
+            int number;
+            char* word;
+        };
+    };
+
     //This struct holds the contents of an instruction including command and arguments
-    struct instruction{
-        int args[MAX_PARAMETERS];
-        std::string argName;
+    struct Instruction{
+        Parameter args[MAX_PARAMETERS];
+        std::string commandName;
     } typedef instr;
 
     /**

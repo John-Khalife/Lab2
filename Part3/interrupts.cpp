@@ -50,9 +50,20 @@ namespace Parsing {
                 std::stringstream ss(text);
                 int i = 0;
                 std::string s;
-                getline(ss,operation->argName,' ');// First parameter always command
+                getline(ss,operation->commandName,' ');// First parameter always command
                 while (getline(ss,s,' ')) { //while for any args
-                    operation->args[i] = stoi(s);
+                    //Check if the argument is a string or an integer
+                    for (int i = 0 ; i < std::strlen(s.c_str()) ; i++) {
+                        if (!isdigit(s[i])) {
+                            operation->args[i].isString = true;
+                        }
+                    }
+
+                    if (operation->args[i].isString) {
+                        std::strncpy(operation->args[i].word, s.c_str(), 20);
+                    } else {
+                        operation->args[i].number = stoi(s);
+                    }
                     i++;
                 }
             } else {
