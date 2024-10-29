@@ -36,10 +36,9 @@ namespace MemoryStructures {
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
-    struct File {
+    struct extFile {
         char programName[20];
         __uint128_t size;
-        File* next;
     };
 
     /**
@@ -72,6 +71,9 @@ namespace Parsing {
         const string FORK = "FORK";
         const string EXEC = "EXEC";
     }
+
+
+    void readExtFiles(std::ifstream* file, MemoryStructures::extFile* head);
 
     //This structure holds parameters
     struct Parameter {
