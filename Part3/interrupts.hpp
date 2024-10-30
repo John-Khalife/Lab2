@@ -16,44 +16,95 @@
 //This namespace contains simulated memory structures used by the CPU.
 namespace MemoryStructures {
 
-    int PARTITION_SIZES[] = {40,25,15,10,8,2}; 
+    const int PARTITION_SIZES[] = {40,25,15,10,8,2}; 
+    int highestPid = 0; //This holds the highest pid
 
     //This structure represents a single partition
     struct Partition {
-        __uint128_t partitionNum;
-        __uint128_t size;
-        std::string code;
+        __uint8_t partitionNum;
+        __uint8_t size;
+        char* code;
     } typedef part_t;
 
     //This structure represents a single PCB entry.
     struct PcbEntry {
-        __uint128_t pid;
-        __uint128_t cpuTime;
-        __uint128_t partitionNum; 
-        __uint128_t memoryAllocated;
+        __uint64_t pid;
+        char programName[20];
+        __uint8_t partitionNum; 
+        __uint8_t memoryAllocated;
         std::shared_ptr<PcbEntry> nextNode;
-        std::ifstream filespot; 
+        std::ifstream filespot; //This is essentially the PC
+        bool doExec = true;
+        std::shared_ptr<PcbEntry> parent;
+         //hidden variable
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
     struct extFile {
         char programName[20];
         __uint128_t size;
+        std::shared_ptr<extFile> nextNode;
     };
 
     /**
-     * This method is intended to be used to add on a new process to the pcb.
-     * @param head - the starting node (containing the init process)
-     * @param pid - the process id
-     * @param cpuTime - the amount of time remaining for the process to execute
-     * @param partitionNum - the number of the partition
-     * @param memoryAllocated - the amount of memory in mB allocated to the process
+     * This function returns a string containing the pcb.
+     * @param pcb - a pointer to the PCB
+     * @return a string containing the representation of the PCB table.
     */
-    void addPCBEntry(std::shared_ptr<pcb_t> head,
-        __uint128_t pid,
-        __uint128_t cpuTime,
-        __uint128_t partitionNum,
-        __uint128_t memoryAllocated);
+    std::string pcbToString(std::shared_ptr<pcb_t>& pcb);
+
+    /**
+     * This method is intended to be used to add on a new process to the pcb.
+     * @param node - the node to be copied
+    */
+    void copyPCBEntry(std::shared_ptr<pcb_t>& entry);
+
+    /**
+     * This method modifies a pcb entry, used for the exec command.
+     * @param head
+     * @param pid
+     * @param programName
+     * @param partitionNum
+     * @param memoryAllocated
+     * @param filename
+    */
+    void modifyPCBEntry(
+        std::shared_ptr<pcb_t>& entry,
+        char programName[20],
+        __uint8_t partitionNum,
+        __uint8_t memoryAllocated);
+
+    /**
+     * This function reserves the memory.
+     * @param memory - pointer to the memory object
+     * @param partitionNum - parition number
+     * @param programName - what the partition is reserved for.
+     * @return - a partition number
+     * @
+    */
+    int reserveMemory(Partition* memory, __uint8_t size, std::string programName);
+
+    /**
+     * Frees memory in a partition.
+     * @param memory - pointer to the memory structure
+     * @param partitionNum - the partition number to free
+    */
+    void freeMemory(Partition* memory, __uint8_t partitionNum);
+
+    /**
+     * This function searches the file linked list for the size of a file
+     * @param head - the structure containing all files
+     * @param programName - the name of the program
+     * @return an integer representing the size of the program.
+    */
+   __uint8_t getFileSize(std::shared_ptr<extFile>& head, char* programName);
+
+    /**
+     * This function serves to get the process that needs to be executed.
+     * @param pcb a pointer to the PCB
+     * @return a pointer to the running process
+    */
+    std::shared_ptr<pcb_t> getRunningProcess(std::shared_ptr<pcb_t>& pcb);
 }
 
 
@@ -61,6 +112,7 @@ namespace MemoryStructures {
 namespace Parsing {
 
     const int MAX_PARAMETERS = 2; // Constant that holds the maximum number of parameters a command can have.
+    const char* PROGRAMS_LIST_FILE_NAME = "external_files.txt";
 
     // If ever a new instruction needs to be added - add the equivalent string here
     namespace orders {
@@ -71,9 +123,6 @@ namespace Parsing {
         const string FORK = "FORK";
         const string EXEC = "EXEC";
     }
-
-
-    void readExtFiles(std::ifstream* file, MemoryStructures::extFile* head);
 
     //This structure holds parameters
     struct Parameter {
@@ -103,17 +152,39 @@ namespace Parsing {
      * @return a hexidecimal string.
     */
     std::string integerToHexString(int number);
+
+    /**
+     * This function takes a extFile empty node and initializes a linked list of files in memory.
+     * @param head - this is a null node that gets initialized by the function.
+    */
+    void readExtFiles(std::shared_ptr<MemoryStructures::extFile>& head);
 };
 
 //All functions in this namespace are responsible for execution
 namespace Execution {
+
+    int timer = 0; //Necessary for keeping track of the program time over multiple functions within execution
+    std::ofstream output; //keep track of the output file - otherwise would have to pass to every single function in execution.
+    const char* PCB_OUTPUT_FILE_NAME = "sample.txt";
+
+    /**
+     * This method sets the output file for execution
+     * @param filename - the name of the primary output file
+    */
+    bool setOutputFile(std::string filename);
+
+    /**
+     * This method prints the toString method of the PCB to a file
+     * @param pcb the pcb structure
+    */
+    void writePcbTable(std::shared_ptr<MemoryStructures::pcb_t> pcb);
 
     /**
      * This method represents the CPU instruction that can be given from the trace.
      * @param duration - an integer representing the duration of the command.
      * @param output - an output stream for writing to the execution file.
     */
-    void executeCPU(std::ofstream* output, int duration);
+    void executeCPU(int duration);
 
     /**
      * This method is intended to process interrupts given by an I/O device connected to the CPU.
@@ -121,14 +192,14 @@ namespace Execution {
      * @param isrAddress - an integer representing the address of the ISR address in the vector table
      * @param output - an output stream for writing to the execution file.
     */
-    void interrupt(std::ofstream* output, int duration,int isrAddress);
+    void interrupt(int duration,int isrAddress);
 
     /**
      * This method is meant to be used to access the vector table given an address and will output the ISR address it found.
      * @param isrAddress - an integer representing the address of the ISR address in the vector table
      * @param output - an output stream for writing to the execution file.
     */
-    void accessVectorTable(std::ofstream* output, int isrAddress);
+    void accessVectorTable(int isrAddress);
 
     /**
      * Method used to write CPU events to the output file
@@ -137,7 +208,7 @@ namespace Execution {
      * @param output - an output stream for writing to the execution file.
      * 
     */
-    void writeExecutionStep(std::ofstream* output, int duration, std::string eventType);
+    void writeExecutionStep(int duration, std::string eventType);
 
     /**
      * This method is intended to be used for a system call - it checks the input device.
@@ -145,29 +216,30 @@ namespace Execution {
      * @param isrAddress - An integer stating the memory address in the vector table for the ISR.
      * @param output - an output stream for writing to the execution file.
     */
-    void systemCall(std::ofstream* output, int duration, int isrAddress);
+    void systemCall(int duration, int isrAddress);
 
     /**
      * This method is intended to handle the fork instruction 
      * @param output - an output stream for writing to the execution file.
      * @param duration - An integer stating the time taken for the CPu to complete the action
     */
-    void fork(std::ofstream* output, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb);
+    void fork(int duration, std::shared_ptr<MemoryStructures::pcb_t>& currentProcess);
 
    /**
     * This method handles the execute instruction
     * @param filename - a string representing the file name
     * @param duration - An integer stating the time taken for the CPU to complete the action
    */
-    void exec(std::ofstream* output, std::string filename, int duration, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files);
+    void exec(char* filename, int duration, std::shared_ptr<MemoryStructures::pcb_t>& currentProcess, std::shared_ptr<MemoryStructures::extFile>& files,MemoryStructures::Partition* memory);
 
     /**
      * This method is used to call the appropriate function based on the instrcution given.
      * @param instruction - a instr struct that contains the command and any parameters it may have
      * @param output - an output stream for writing to the execution file.
     */
-    void executeInstruction(std::ofstream* output, Parsing::instr* instruction, std::shared_ptr<MemoryStructures::pcb_t> pcb, MemoryStructures::File* files);
+    void executeInstruction(Parsing::instr* instruction,
+        std::shared_ptr<MemoryStructures::pcb_t>& currentProcess,
+        MemoryStructures::extFile* files,
+        MemoryStructures::Partition* memory);
 };
-
-
 #endif
