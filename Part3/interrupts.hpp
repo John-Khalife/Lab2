@@ -16,7 +16,8 @@
 //This namespace contains simulated memory structures used by the CPU.
 namespace MemoryStructures {
 
-    const int PARTITION_SIZES[] = {40,25,15,10,8,2}; 
+    const int PARTITION_SIZES[] = {40,25,15,10,8,2};
+    const int PARTITION_NUM = 6; 
     int highestPid = 11; //This holds the highest pid
 
     //This structure represents a single partition

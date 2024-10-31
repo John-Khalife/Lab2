@@ -55,11 +55,11 @@ namespace MemoryStructures {
     int reserveMemory(Partition* memory, __uint8_t size, char* programName) {
         //*NOTE Partition sizes are ordered from largest to smallest - so best fit will be easy.
         //*That means however, this method may need to be updated in the future if different partitions are given.
-        for (int i = sizeof(PARTITION_SIZES)/sizeof(int) - 1; i >= 0 ; i--) {
+        for (int i = PARTITION_NUM - 1; i >= 0 ; i--) {
             if (memory[i].code == "free") {
-                if (size < memory[i].size) {
+                if (size <= memory[i].size) {
                     memory[i].code = programName;
-                    return sizeof(PARTITION_SIZES)/sizeof(int) - i;
+                    return i;
                 }
             }
         }
@@ -328,14 +328,14 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
             return;
         }
         int findTime = floor((execTimeDistribution(generator))*duration);
-        writeExecutionStep(findTime,"Found partition " + std::to_string(partitionNum) + " with " + std::to_string(memory[6-partitionNum + 1].size) + "Mb of space." );
+        writeExecutionStep(findTime,"Found partition " + std::to_string(partitionNum + 1) + " with " + std::to_string(memory[partitionNum].size) + "Mb of space." );
         //d. mark the partition as occupied
         int occupiedTime = floor((execTimeDistribution(generator))*duration);
-        writeExecutionStep(occupiedTime,"Marked partition " + std::to_string(partitionNum) + " as occupied.");
+        writeExecutionStep(occupiedTime,"Marked partition " + std::to_string(partitionNum + 1) + " as occupied.");
         //e. update PCB
         int updateTime = floor((execTimeDistribution(generator))*duration);
         writeExecutionStep(updateTime,"Updating PCB with new information.");
-        MemoryStructures::modifyPCBEntry(pcb,index,filename,partitionNum,size);
+        MemoryStructures::modifyPCBEntry(pcb,index,filename,partitionNum + 1,size);
         if (pcb[index].programName == "init") {
                 Parsing::setInput(Parsing::traceName);
             } else {
@@ -391,8 +391,8 @@ int main(int argc, char* argv[]) {
     //Initialize memory partitions with the proper sizes.
     using namespace MemoryStructures;
     Partition* memory = new Partition[6];
-    for (int i = 0; i < sizeof(PARTITION_SIZES)/sizeof(int); i++) {
-        memory[i] = (Partition) {.size = PARTITION_SIZES[i], .partitionNum = i, .code = "free"};
+    for (int i = 0; i < PARTITION_NUM; i++) {
+        memory[i] = (Partition) {.size = PARTITION_SIZES[i], .partitionNum = i + 1, .code = "free"};
     } 
     //Initialize partition 6 with the PCB
     memory[5].code = "init";
@@ -426,7 +426,7 @@ int main(int argc, char* argv[]) {
                 Parsing::setInput(newProcess->programName + ".txt");
             }
             Parsing::input.seekg(newProcess->fpos); //set PC
-            Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->index) + " to " + std::to_string(newProcess->index));
+            //Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->index) + " to " + std::to_string(newProcess->index));
             currentProcess = newProcess;
         }
     }

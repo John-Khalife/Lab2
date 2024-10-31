@@ -1,4 +1,1 @@
-CPU, 42
-SYSCALL 5, 100
-FORK, 67
-EXEC, program2, 89
+CPU, 100

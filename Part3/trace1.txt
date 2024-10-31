@@ -1,6 +1,4 @@
-FORK, 30
-CPU, 50
-CPU, 50
-END_IO, 4, 70
-EXEC, program1, 100
-CPU, 70 
+FORK, 10
+EXEC program1, 50
+FORK, 15
+EXEC program2, 25
