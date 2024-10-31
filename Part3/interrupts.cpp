@@ -426,7 +426,7 @@ int main(int argc, char* argv[]) {
                 Parsing::setInput(newProcess->programName + ".txt");
             }
             Parsing::input.seekg(newProcess->fpos); //set PC
-            Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->pid) + " to " + std::to_string(newProcess->pid));
+            //Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->pid) + " to " + std::to_string(newProcess->pid));
             currentProcess = newProcess;
         }
     }
