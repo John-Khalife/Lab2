@@ -17,7 +17,7 @@
 namespace MemoryStructures {
 
     const int PARTITION_SIZES[] = {40,25,15,10,8,2}; 
-    int highestPid = 0; //This holds the highest pid
+    int highestPid = 11; //This holds the highest pid
 
     //This structure represents a single partition
     struct Partition {
@@ -35,6 +35,7 @@ namespace MemoryStructures {
         std::streampos fpos; //This is essentially the PC
         bool doExec; //hidden variable
         bool isRunning; //hidden variable
+        int index; //hidden var
         
         PcbEntry(__uint64_t pid_v,
             std::string programName_v,
@@ -42,7 +43,8 @@ namespace MemoryStructures {
             __uint8_t memoryAllocated_v,
             std::streampos fpos_v,
             bool doExec_v,
-            bool isRunning_v)
+            bool isRunning_v,
+            int index_v)
             :
             pid(pid_v),
             programName(programName_v),
@@ -50,7 +52,8 @@ namespace MemoryStructures {
             memoryAllocated(memoryAllocated_v),
             fpos(fpos_v),
             doExec(doExec_v),
-            isRunning(isRunning_v) {}
+            isRunning(isRunning_v),
+            index(index_v) {}
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
@@ -236,23 +239,28 @@ namespace Execution {
      * This method is intended to handle the fork instruction 
      * @param duration - An integer stating the time taken for the CPu to complete the action
     */
-    void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t currentPid);
+    void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index);
 
    /**
     * This method handles the execute instruction
     * @param filename - a string representing the file name
     * @param duration - An integer stating the time taken for the CPU to complete the action
    */
-    void exec(char* filename, int duration, std::shared_ptr<MemoryStructures::pcb_t>& currentProcess, std::shared_ptr<MemoryStructures::extFile>& files,MemoryStructures::Partition* memory);
+    void exec(char* filename, int duration, 
+        std::vector<MemoryStructures::pcb_t>& pcb,
+        std::vector<MemoryStructures::extFile>& files,
+        MemoryStructures::Partition* memory,
+        int index);
 
     /**
      * This method is used to call the appropriate function based on the instrcution given.
      * @param instruction - a instr struct that contains the command and any parameters it may have
     */
-    void exec(char* filename, int duration, 
+    void executeInstruction(
+        Parsing::instr* instruction,
         std::vector<MemoryStructures::pcb_t>& pcb,
-        std::vector<MemoryStructures::extFile>& files,
+       std::vector<MemoryStructures::extFile>& files,
         MemoryStructures::Partition* memory,
-        __uint64_t currentPid);
+        int index);
 };
 #endif

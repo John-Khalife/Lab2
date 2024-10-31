@@ -15,11 +15,10 @@
 #include "interrupts.hpp"
 
 namespace MemoryStructures {
-    void copyPCBEntry(std::vector<pcb_t>& pcb,int index)    
+    void copyPCBEntry(std::vector<pcb_t>& pcb, int index)    
     {
-        
             if (pcb.empty()) {
-                pcb_t newProcess(highestPid,"init",6,1,0,true,true);
+                pcb_t newProcess(highestPid,"init",6,1,0,true,true,0);
                 highestPid++;
                 pcb.push_back(newProcess);
             } else {
@@ -29,7 +28,8 @@ namespace MemoryStructures {
                     pcb[index].memoryAllocated,
                     pcb[index].fpos,
                     true,
-                    true);
+                    true,
+                    pcb.size());
                 highestPid++;
                 //Tell the parent process not to take the next exec command
                 pcb[index].doExec = false;
@@ -59,7 +59,7 @@ namespace MemoryStructures {
             if (memory[i].code == "free") {
                 if (size < memory[i].size) {
                     memory[i].code = programName;
-                    return i;
+                    return sizeof(PARTITION_SIZES)/sizeof(int) - i;
                 }
             }
         }
@@ -275,7 +275,7 @@ namespace Execution {
         writeExecutionStep(1, "Load address " + text + " into the PC."); //output the address being loaded
     }
 
-void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t currentPid) {
+void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
         std::default_random_engine generator; // generates uniformly distributed numbers
         generator.seed(time(0)); //Give the generator a seed
         std::uniform_int_distribution<int> forkTimeDistribution(1,9); //Create a distribution
@@ -286,11 +286,11 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t cu
         //*NOTE: The assignment stated a random time of 1-10 but also must sum to duration.
         //*Assumption: a fork call will not take less than 10ms.
         int forkTime = floor((forkTimeDistribution(generator)/100)*duration);
-        writeExecutionStep(forkTime, "Copy parent PCB to child PCB");
+        writeExecutionStep(forkTime, "FORK: copy parent PCB to child PCB");
         //Need to increment once before forking
         //Parsing::incrementInput();
-        pcb[currentPid].fpos = Parsing::input.tellg();
-        MemoryStructures::copyPCBEntry(pcb,currentPid);
+        pcb[index].fpos = Parsing::input.tellg();
+        MemoryStructures::copyPCBEntry(pcb,index);
         //c. Call the routing scheduler (all it should display for now is 'scheduler called')
         writeExecutionStep(duration - forkTime,"Scheduler called.");
         //d. return from the ISR
@@ -302,9 +302,9 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t cu
         std::vector<MemoryStructures::pcb_t>& pcb,
         std::vector<MemoryStructures::extFile>& files,
         MemoryStructures::Partition* memory,
-        __uint64_t currentPid) {
-        if (!pcb[currentPid].doExec) {
-            pcb[currentPid].doExec = true;
+        int index) {
+        if (!pcb[index].doExec) {
+            pcb[index].doExec = true;
             return;
         }
         std::default_random_engine generator; // generates uniformly distributed numbers
@@ -328,20 +328,20 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t cu
             return;
         }
         int findTime = floor((execTimeDistribution(generator))*duration);
-        writeExecutionStep(findTime,"Found partition " + std::to_string(partitionNum) + " with " + std::to_string(memory[partitionNum].size) + "Mb of space." );
+        writeExecutionStep(findTime,"Found partition " + std::to_string(partitionNum) + " with " + std::to_string(memory[6-partitionNum + 1].size) + "Mb of space." );
         //d. mark the partition as occupied
         int occupiedTime = floor((execTimeDistribution(generator))*duration);
         writeExecutionStep(occupiedTime,"Marked partition " + std::to_string(partitionNum) + " as occupied.");
         //e. update PCB
         int updateTime = floor((execTimeDistribution(generator))*duration);
         writeExecutionStep(updateTime,"Updating PCB with new information.");
-        MemoryStructures::modifyPCBEntry(pcb,currentPid,filename,partitionNum,size);
-        if (pcb[currentPid].programName == "init") {
+        MemoryStructures::modifyPCBEntry(pcb,index,filename,partitionNum,size);
+        if (pcb[index].programName == "init") {
                 Parsing::setInput(Parsing::traceName);
             } else {
-                Parsing::setInput(pcb[currentPid].programName + ".txt");
+                Parsing::setInput(pcb[index].programName + ".txt");
             }
-            Parsing::input.seekg(pcb[currentPid].fpos); //set PC
+            Parsing::input.seekg(pcb[index].fpos); //set PC
         //f. do the routing scheduler thing again
         writeExecutionStep(duration - updateTime - occupiedTime - findTime - execTime,"Scheduler called.");
         //g. return normally
@@ -354,7 +354,7 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t cu
         std::vector<MemoryStructures::pcb_t>& pcb,
        std::vector<MemoryStructures::extFile>& files,
         MemoryStructures::Partition* memory,
-        __uint64_t currentPid) {
+        int index) {
 
         if (!Parsing::orders::CPU.compare(instruction->commandName)) {
             executeCPU(instruction->args[0].number);
@@ -363,9 +363,9 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, __uint64_t cu
         } else if (!Parsing::orders::END_IO.compare(instruction->commandName)) {
             interrupt(instruction->args[1].number,instruction->args[0].number);
         } else if (!Parsing::orders::FORK.compare(instruction->commandName)) {
-            fork(instruction->args[0].number,pcb,currentPid);
+            fork(instruction->args[0].number,pcb,index);
         } else if (!Parsing::orders::EXEC.compare(instruction->commandName)) {
-            exec(instruction->args[0].word,instruction->args[1].number,pcb, files, memory, currentPid);
+            exec(instruction->args[0].word,instruction->args[1].number,pcb, files, memory, index);
         }
     }
 }
@@ -412,7 +412,7 @@ int main(int argc, char* argv[]) {
     Execution::writePcbTable(pcb);
     while(true){
         Parsing::instr* operation = Parsing::readFromTrace();
-        Execution::executeInstruction(operation,pcb,files,memory,currentProcess->pid);
+        Execution::executeInstruction(operation,pcb,files,memory,currentProcess->index);
         //Switch context if needed
         if (!Parsing::input.is_open()) {currentProcess->isRunning = false;}
         //std::cout << "bug" << std::endl;
@@ -426,7 +426,7 @@ int main(int argc, char* argv[]) {
                 Parsing::setInput(newProcess->programName + ".txt");
             }
             Parsing::input.seekg(newProcess->fpos); //set PC
-            //Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->pid) + " to " + std::to_string(newProcess->pid));
+            Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->index) + " to " + std::to_string(newProcess->index));
             currentProcess = newProcess;
         }
     }
