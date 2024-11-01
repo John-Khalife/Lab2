@@ -8,29 +8,28 @@
 #include <fstream>
 #include <random>
 #include <sstream>
-#include <string>
+#include <string.h>
 #include <iomanip>
 #include <memory>
 
 #include "interrupts.hpp"
 
+using namespace std;
+
 namespace MemoryStructures {
-    void copyPCBEntry(std::vector<pcb_t>& pcb, int index)    
+    void copyPCBEntry(vector<pcb_t>& pcb, int index)    
     {
             if (pcb.empty()) {
-                pcb_t newProcess(highestPid,"init",6,1,0,true,true,0);
-                highestPid++;
+                pcb_t newProcess(smallestPid + pcb.size(),"init",6,1,0,true,true);
                 pcb.push_back(newProcess);
             } else {
-                pcb_t newProcess(highestPid,
+                pcb_t newProcess(smallestPid + pcb.size(),
                     pcb[index].programName,
                     pcb[index].partitionNum,
                     pcb[index].memoryAllocated,
                     pcb[index].fpos,
                     true,
-                    true,
-                    pcb.size());
-                highestPid++;
+                    true);
                 //Tell the parent process not to take the next exec command
                 pcb[index].doExec = false;
                 pcb.push_back(newProcess);
@@ -38,7 +37,7 @@ namespace MemoryStructures {
     }
 
     void modifyPCBEntry(
-        std::vector<pcb_t>& pcb,
+        vector<pcb_t>& pcb,
         int index,
         char programName[20],
         __uint8_t partitionNum,
@@ -70,16 +69,16 @@ namespace MemoryStructures {
         memory[partitionNum].code = "free";
     }
 
-    __uint8_t getFileSize(std::vector<extFile>& files, char* programName) {
+    __uint8_t getFileSize(vector<extFile>& files, char* programName) {
         for (int i = 0 ; i < files.size() ; i++) {
-            if (std::strcmp(programName,files[i].programName) == 0) {
+            if (strcmp(programName,files[i].programName) == 0) {
                 return files[i].size;
             }
         }
         return 0;
     }
 
-    pcb_t* getRunningProcess(std::vector<pcb_t>& pcb) {
+    pcb_t* getRunningProcess(vector<pcb_t>& pcb) {
         for (int i = pcb.size(); i >= 0 ; i--) {
             if(pcb[i].isRunning) {
                 return &pcb[i];
@@ -91,12 +90,12 @@ namespace MemoryStructures {
 
 namespace Parsing {
 
-    void readExtFiles(std::vector<MemoryStructures::extFile>& files)
+    void readExtFiles(vector<MemoryStructures::extFile>& files)
     {
-        std::ifstream file("./external_files.txt");
+        ifstream file("./external_files.txt");
         while (!file.eof()) {
                 MemoryStructures::extFile newNode;
-                std::string text;
+                string text;
                 getline(file,text);
                 for(int i = 0, len = text.size(); i < len; i++){
                     if (text[i] == ','){
@@ -104,8 +103,8 @@ namespace Parsing {
                         len = text.size();
                     }
                 }
-                std::stringstream ss(text);
-                std::string temp;
+                stringstream ss(text);
+                string temp;
                 getline(ss, temp,' ');// First parameter always program name
                 for (int i = 0; i < temp.length(); i++){
                     newNode.programName[i] = temp[i];
@@ -123,7 +122,7 @@ namespace Parsing {
         {
             instr* operation = new instr();
             if (!input.eof()) {
-                std::string text;
+                string text;
                 getline(input,text);
                 for(int i = 0, len = text.size(); i < len; i++){
                     if (text[i] == ','){
@@ -132,20 +131,20 @@ namespace Parsing {
                     }
                 }
                 
-                std::stringstream ss(text);
+                stringstream ss(text);
                 int i = 0;
-                std::string s;
+                string s;
                 getline(ss,operation->commandName,' ');// First parameter always command
                 while (getline(ss,s,' ')) { //while for any args
                     //Check if the argument is a string or an integer
-                    for (int i = 0 ; i < std::strlen(s.c_str()) ; i++) {
+                    for (int i = 0 ; i < strlen(s.c_str()) ; i++) {
                         if (!isdigit(s[i])) {
                             operation->args[i].isString = true;
                             break;
                         }
                     }
                     if (operation->args[i].isString) {
-                        std::strncpy(operation->args[i].word, s.c_str(),20);
+                        strncpy(operation->args[i].word, s.c_str(),20);
                     } else {
                         operation->args[i].number = stoi(s);
                     }
@@ -158,22 +157,22 @@ namespace Parsing {
             return operation;
         }
 
-    std::string integerToHexString(int number) {
-        std::stringstream ss;
-        ss << std::setfill('0') << std::setw(4) << std::hex << number;
+    string integerToHexString(int number) {
+        stringstream ss;
+        ss << setfill('0') << setw(4) << hex << number;
         return "0x" + ss.str();
     }
 
     //helper method
     int numDigits(int number) {
         if (number == 0) return 1;
-        return static_cast<int>(std::log10(std::abs(number)) + 1);
+        return static_cast<int>(log10(abs(number)) + 1);
     }
 
     /**
      * function to set the input file
     */
-    void setInput(std::string fileName) {
+    void setInput(string fileName) {
        input.close();
        input.open(fileName);
     }
@@ -182,53 +181,53 @@ namespace Parsing {
     * function to increment the input file
     */
    void incrementInput() {
-        std::string none;
-        std::getline(input,none);
+        string none;
+        getline(input,none);
    }
 }
 
 namespace Execution {
 
-    bool setOutputFile(std::string filename) {
+    bool setOutputFile(string filename) {
         output.open(filename);
         if (output.fail()) {return false;}
         return true;
     }
 
-    void writeExecutionStep(int duration, std::string eventType) {
+    void writeExecutionStep(int duration, string eventType) {
         if (output.fail()) {return;}
-        output << timer << ", " << duration << ", " << eventType << std::endl; // Write the Execution message in the proper format
+        output << timer << ", " << duration << ", " << eventType << endl; // Write the Execution message in the proper format
         timer += duration; //Add the amount of timer to CPU timer for the next write
     }
 
-    void writePcbTable(std::vector<MemoryStructures::pcb_t> pcb) {
-        static std::ofstream pcbOutput(PCB_OUTPUT_FILE_NAME);
+    void writePcbTable(vector<MemoryStructures::pcb_t> pcb) {
+        static ofstream pcbOutput(PCB_OUTPUT_FILE_NAME);
 
-        pcbOutput << "!-----------------------------------------------------------!" << std::endl;
-        pcbOutput << "Save Time: " << timer << " ms" << std::endl;
-        pcbOutput << "+----------------------------------------------+" << std::endl;
-        pcbOutput << "| PID | Program Name | Partition Number | Size |" << std::endl;
-        pcbOutput << "+----------------------------------------------+" << std::endl;
+        pcbOutput << "!-----------------------------------------------------------!" << endl;
+        pcbOutput << "Save Time: " << timer << " ms" << endl;
+        pcbOutput << "+----------------------------------------------+" << endl;
+        pcbOutput << "| PID | Program Name | Partition Number | Size |" << endl;
+        pcbOutput << "+----------------------------------------------+" << endl;
         for (int i = 0 ; i < pcb.size() ; i++) {
-            pcbOutput << "| " << std::to_string((int) pcb[i].pid); 
-            pcbOutput << std::string(3 - Parsing::numDigits((int) pcb[i].pid),' ') << " | ";
-            pcbOutput << pcb[i].programName << std::string((int)(12 - pcb[i].programName.length()),' ') << " | ";
-            pcbOutput << std::to_string((int) pcb[i].partitionNum);
-            pcbOutput << std::string(16 - Parsing::numDigits((int) pcb[i].partitionNum) ,' ');
-            pcbOutput << " | " << std::to_string((int) pcb[i].memoryAllocated);
-            pcbOutput << std::string(4 - Parsing::numDigits((int) pcb[i].memoryAllocated),' ');
-            pcbOutput << " |" << std::endl;
+            pcbOutput << "| " << to_string((int) pcb[i].pid); 
+            pcbOutput << string(max(3 - Parsing::numDigits((int) pcb[i].pid), 0),' ') << " | ";
+            pcbOutput << pcb[i].programName << string((int)(12 - pcb[i].programName.length()),' ') << " | ";
+            pcbOutput << to_string((int) pcb[i].partitionNum);
+            pcbOutput << string(16 - Parsing::numDigits((int) pcb[i].partitionNum) ,' ');
+            pcbOutput << " | " << to_string((int) pcb[i].memoryAllocated);
+            pcbOutput << string(4 - Parsing::numDigits((int) pcb[i].memoryAllocated),' ');
+            pcbOutput << " |" << endl;
         }
-        pcbOutput << "+----------------------------------------------+" << std::endl;
-        pcbOutput << "!-----------------------------------------------------------!" << std::endl;
+        pcbOutput << "+----------------------------------------------+" << endl;
+        pcbOutput << "!-----------------------------------------------------------!" << endl;
     }
         
     void systemCall(int duration, int isrAddress) {
         accessVectorTable(isrAddress);
 
-        std::default_random_engine generator; // generates uniformly distributed numbers
+        default_random_engine generator; // generates uniformly distributed numbers
         generator.seed(time(0)); //Give the generator a seed
-        std::uniform_real_distribution<> isrDistribution(0, 0.25); //probability distribution for 0-25% of the duration.
+        uniform_real_distribution<> isrDistribution(0, 0.25); //probability distribution for 0-25% of the duration.
         int dataTransferTime = (int) duration*isrDistribution(generator) + 1; //time for data transfer
         int errorCheckingTime = (int) duration*isrDistribution(generator) + 1; //generate time for error checking
 
@@ -252,9 +251,9 @@ namespace Execution {
     }
 
     void accessVectorTable(int isrAddress) {
-        std::default_random_engine generator; // generates uniformly distributed numbers
+        default_random_engine generator; // generates uniformly distributed numbers
         generator.seed(time(0)); //Give the generator a seed
-        std::uniform_int_distribution<int> contextSaveTimeDistribution(1,3); //Create a distribution
+        uniform_int_distribution<int> contextSaveTimeDistribution(1,3); //Create a distribution
 
         //First switch to kernel mode
         writeExecutionStep(1,"Switch CPU to Kernel mode.");
@@ -266,7 +265,7 @@ namespace Execution {
         ifstream file;
         string text;
         
-        writeExecutionStep(1,"Find vector " + std::to_string(isrAddress) + " in memory position " + Parsing::integerToHexString(isrAddress) + ".");
+        writeExecutionStep(1,"Find vector " + to_string(isrAddress) + " in memory position " + Parsing::integerToHexString(isrAddress) + ".");
         file.open("vector_table.txt");
         for (int i = 0 ; i <= isrAddress ; i++) {
             getline(file,text);
@@ -275,10 +274,10 @@ namespace Execution {
         writeExecutionStep(1, "Load address " + text + " into the PC."); //output the address being loaded
     }
 
-void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
-        std::default_random_engine generator; // generates uniformly distributed numbers
+void fork(int duration, vector<MemoryStructures::pcb_t>& pcb, int index) {
+        default_random_engine generator; // generates uniformly distributed numbers
         generator.seed(time(0)); //Give the generator a seed
-        std::uniform_int_distribution<int> forkTimeDistribution(1,9); //Create a distribution
+        uniform_int_distribution<int> forkTimeDistribution(1,9); //Create a distribution
 
         //a. simulates system call - access vector table
         accessVectorTable(2);
@@ -299,28 +298,28 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
     }
 
     void exec(char* filename, int duration, 
-        std::vector<MemoryStructures::pcb_t>& pcb,
-        std::vector<MemoryStructures::extFile>& files,
+        vector<MemoryStructures::pcb_t>& pcb,
+        vector<MemoryStructures::extFile>& files,
         MemoryStructures::Partition* memory,
         int index) {
         if (!pcb[index].doExec) {
             pcb[index].doExec = true;
             return;
         }
-        std::default_random_engine generator; // generates uniformly distributed numbers
+        default_random_engine generator; // generates uniformly distributed numbers
         generator.seed(time(0)); //Give the generator a seed
-        std::uniform_real_distribution<float> execTimeDistribution(0,0.2); //Create a distribution
+        uniform_real_distribution<float> execTimeDistribution(0,0.2); //Create a distribution
 
         //a. simulate a system call - access the vector table
         accessVectorTable(3);
         //b. find the file in the list, and set the size in the PCB
         __uint8_t size = MemoryStructures::getFileSize(files,filename);
         if (size == 0) {
-            writeExecutionStep(0,"ERROR: No file of name " + std::string(filename)  + " exists");
+            writeExecutionStep(0,"ERROR: No file of name " + string(filename)  + " exists");
             return;
         }
         int execTime = floor((0.2)*duration);
-        writeExecutionStep(execTime,"EXEC: load " + std::string(filename) + " of size " + std::to_string(size) + "Mb.");
+        writeExecutionStep(execTime,"EXEC: load " + string(filename) + " of size " + to_string(size) + "Mb.");
         //c. find an empty partition where the program fits, with the best fit policy
         int partitionNum = MemoryStructures::reserveMemory(memory,size,filename);
         if (partitionNum < 0) {
@@ -328,10 +327,10 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
             return;
         }
         int findTime = floor((execTimeDistribution(generator))*duration);
-        writeExecutionStep(findTime,"Found partition " + std::to_string(partitionNum + 1) + " with " + std::to_string(memory[partitionNum].size) + "Mb of space." );
+        writeExecutionStep(findTime,"Found partition " + to_string(partitionNum + 1) + " with " + to_string(memory[partitionNum].size) + "Mb of space." );
         //d. mark the partition as occupied
         int occupiedTime = floor((execTimeDistribution(generator))*duration);
-        writeExecutionStep(occupiedTime,"Marked partition " + std::to_string(partitionNum + 1) + " as occupied.");
+        writeExecutionStep(occupiedTime,"Marked partition " + to_string(partitionNum + 1) + " as occupied.");
         //e. update PCB
         int updateTime = floor((execTimeDistribution(generator))*duration);
         writeExecutionStep(updateTime,"Updating PCB with new information.");
@@ -351,8 +350,8 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
 
     void executeInstruction(
         Parsing::instr* instruction,
-        std::vector<MemoryStructures::pcb_t>& pcb,
-       std::vector<MemoryStructures::extFile>& files,
+        vector<MemoryStructures::pcb_t>& pcb,
+       vector<MemoryStructures::extFile>& files,
         MemoryStructures::Partition* memory,
         int index) {
 
@@ -373,14 +372,14 @@ void fork(int duration, std::vector<MemoryStructures::pcb_t>& pcb, int index) {
 int main(int argc, char* argv[]) {
     //Check to make sure there are arguments
     if (argc <= 1 || argc > 2) {
-        std::cout << "Improper argument number." << std::endl;
+        cout << "Improper argument number." << endl;
         return 1;
     }
     Parsing::traceName = argv[1];
     
     //Get the file number in the title of trace (if it is there)
-    std::string fileNum = ((std::string) argv[1]).substr(((std::string) argv[1]).find_first_of("0123456789"),((std::string) argv[1]).find_last_of("0123456789") - ((std::string) argv[1]).find_first_of("0123456789") + 1); //Grab the value before .txt
-    std::ofstream output;
+    string fileNum = ((string) argv[1]).substr(((string) argv[1]).find_first_of("0123456789"),((string) argv[1]).find_last_of("0123456789") - ((string) argv[1]).find_first_of("0123456789") + 1); //Grab the value before .txt
+    ofstream output;
     //Create input and output file objects
     if (isdigit(fileNum[0])) { //If the value is a number, add it to the end of Execution.
         Execution::setOutputFile("Execution" + fileNum + ".txt");
@@ -392,16 +391,16 @@ int main(int argc, char* argv[]) {
     using namespace MemoryStructures;
     Partition* memory = new Partition[6];
     for (int i = 0; i < PARTITION_NUM; i++) {
-        memory[i] = (Partition) {.size = PARTITION_SIZES[i], .partitionNum = i + 1, .code = "free"};
+        memory[i] = (Partition) {.partitionNum = __uint8_t(i + 1), .size = __uint8_t(PARTITION_SIZES[i]), .code = "free"};
     } 
     //Initialize partition 6 with the PCB
     memory[5].code = "init";
     //Initialize pcb entry
-    std::vector<pcb_t> pcb;
+    vector<pcb_t> pcb;
     MemoryStructures::copyPCBEntry(pcb,0);
     
     //Initialize the file list.
-    std::vector<extFile> files;
+    vector<extFile> files;
     Parsing::readExtFiles(files);
 
     //Loop continues while there are still processes with open files in the pcb.
@@ -412,10 +411,10 @@ int main(int argc, char* argv[]) {
     Execution::writePcbTable(pcb);
     while(true){
         Parsing::instr* operation = Parsing::readFromTrace();
-        Execution::executeInstruction(operation,pcb,files,memory,currentProcess->index);
+        Execution::executeInstruction(operation,pcb,files,memory,(currentProcess->pid - MemoryStructures::smallestPid));
         //Switch context if needed
         if (!Parsing::input.is_open()) {currentProcess->isRunning = false;}
-        //std::cout << "bug" << std::endl;
+        //cout << "bug" << endl;
         PcbEntry* newProcess = getRunningProcess(pcb);
         if (newProcess == NULL) {break;}
         if (newProcess != currentProcess) { //compare pointers
@@ -426,7 +425,7 @@ int main(int argc, char* argv[]) {
                 Parsing::setInput(newProcess->programName + ".txt");
             }
             Parsing::input.seekg(newProcess->fpos); //set PC
-            //Execution::writeExecutionStep(0,"Process switch from " + std::to_string(currentProcess->index) + " to " + std::to_string(newProcess->index));
+            //Execution::writeExecutionStep(0,"Process switch from " + to_string(currentProcess->index) + " to " + to_string(newProcess->index));
             currentProcess = newProcess;
         }
     }

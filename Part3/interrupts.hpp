@@ -18,7 +18,7 @@ namespace MemoryStructures {
 
     const int PARTITION_SIZES[] = {40,25,15,10,8,2};
     const int PARTITION_NUM = 6; 
-    int highestPid = 11; //This holds the highest pid
+    const int smallestPid = 11; //This holds the smallest pid
 
     //This structure represents a single partition
     struct Partition {
@@ -36,7 +36,6 @@ namespace MemoryStructures {
         std::streampos fpos; //This is essentially the PC
         bool doExec; //hidden variable
         bool isRunning; //hidden variable
-        int index; //hidden var
         
         PcbEntry(__uint64_t pid_v,
             std::string programName_v,
@@ -44,8 +43,7 @@ namespace MemoryStructures {
             __uint8_t memoryAllocated_v,
             std::streampos fpos_v,
             bool doExec_v,
-            bool isRunning_v,
-            int index_v)
+            bool isRunning_v)
             :
             pid(pid_v),
             programName(programName_v),
@@ -53,8 +51,7 @@ namespace MemoryStructures {
             memoryAllocated(memoryAllocated_v),
             fpos(fpos_v),
             doExec(doExec_v),
-            isRunning(isRunning_v),
-            index(index_v) {}
+            isRunning(isRunning_v){}
     } typedef pcb_t;
 
     //This structure represents a file in persistent memory
@@ -82,7 +79,7 @@ namespace MemoryStructures {
     void modifyPCBEntry(
         std::vector<pcb_t>& pcb,
         int index,
-        char programName[21],
+        char programName[20],
         __uint8_t partitionNum,
         __uint128_t memoryAllocated);
 
