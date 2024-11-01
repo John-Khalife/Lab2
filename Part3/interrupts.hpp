@@ -18,7 +18,7 @@ namespace MemoryStructures {
 
     const int PARTITION_SIZES[] = {40,25,15,10,8,2};
     const int PARTITION_NUM = 6; 
-    const int smallestPid = 11; //This holds the smallest pid
+    const int SMALLEST_PID = 11; //This holds the smallest pid
 
     //This structure represents a single partition
     struct Partition {
@@ -92,13 +92,6 @@ namespace MemoryStructures {
      * @
     */
     int reserveMemory(Partition* memory, __uint8_t size, std::string programName);
-
-    /**
-     * Frees memory in a partition.
-     * @param memory - pointer to the memory structure
-     * @param partitionNum - the partition number to free
-    */
-    void freeMemory(Partition* memory, __uint8_t partitionNum);
 
     /**
      * This function searches the file linked list for the size of a file

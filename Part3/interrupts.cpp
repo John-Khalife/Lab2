@@ -20,10 +20,10 @@ namespace MemoryStructures {
     void copyPCBEntry(vector<pcb_t>& pcb, int index)    
     {
             if (pcb.empty()) {
-                pcb_t newProcess(smallestPid + pcb.size(),"init",6,1,0,true,true);
+                pcb_t newProcess(SMALLEST_PID + pcb.size(),"init",6,1,0,true,true);
                 pcb.push_back(newProcess);
             } else {
-                pcb_t newProcess(smallestPid + pcb.size(),
+                pcb_t newProcess(SMALLEST_PID + pcb.size(),
                     pcb[index].programName,
                     pcb[index].partitionNum,
                     pcb[index].memoryAllocated,
@@ -63,10 +63,6 @@ namespace MemoryStructures {
             }
         }
         return -1;
-    }
-
-    void freeMemory(Partition* memory, __uint8_t partitionNum) {
-        memory[partitionNum].code = "free";
     }
 
     __uint8_t getFileSize(vector<extFile>& files, char* programName) {
@@ -176,14 +172,6 @@ namespace Parsing {
        input.close();
        input.open(fileName);
     }
-
-    /**
-    * function to increment the input file
-    */
-   void incrementInput() {
-        string none;
-        getline(input,none);
-   }
 }
 
 namespace Execution {
@@ -287,7 +275,6 @@ void fork(int duration, vector<MemoryStructures::pcb_t>& pcb, int index) {
         int forkTime = floor((forkTimeDistribution(generator)/100)*duration);
         writeExecutionStep(forkTime, "FORK: copy parent PCB to child PCB");
         //Need to increment once before forking
-        //Parsing::incrementInput();
         pcb[index].fpos = Parsing::input.tellg();
         MemoryStructures::copyPCBEntry(pcb,index);
         //c. Call the routing scheduler (all it should display for now is 'scheduler called')
@@ -411,7 +398,7 @@ int main(int argc, char* argv[]) {
     Execution::writePcbTable(pcb);
     while(true){
         Parsing::instr* operation = Parsing::readFromTrace();
-        Execution::executeInstruction(operation,pcb,files,memory,(currentProcess->pid - MemoryStructures::smallestPid));
+        Execution::executeInstruction(operation,pcb,files,memory,(currentProcess->pid - MemoryStructures::SMALLEST_PID));
         //Switch context if needed
         if (!Parsing::input.is_open()) {currentProcess->isRunning = false;}
         //cout << "bug" << endl;
